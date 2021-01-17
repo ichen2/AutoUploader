@@ -33,7 +33,7 @@ Box.com's API and uploads the files. Once this is complete it will notify the us
 
 ## Future Plans
 
-Right now the program is connected to my personal Box.com account, and uses a dev token for authentication. 
-In the future I hope to connect it to the Box.com folder that stores all the tutoring video files, and set up 
-authentication for individual users so that anyone can use it. I also want to add support for study group leaders, 
-since right now the program only works for tutors.
+- Connect program to the actual folder used to store tutoring files (instead of a folder on my personal account)
+- Set up authentication for individual users so that anyone can use it (instead of using dev token) 
+- Add support for study group leaders, since right now the program only works for tutors
+- Improve input validation
