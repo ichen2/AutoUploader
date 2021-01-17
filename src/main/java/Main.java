@@ -2,6 +2,7 @@ import com.box.sdk.BoxAPIConnection;
 import com.box.sdk.BoxFile;
 import com.box.sdk.BoxFolder;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 
 import java.io.*;
 import java.nio.file.InvalidPathException;
@@ -11,6 +12,7 @@ import java.util.Scanner;
 
 
 public class Main {
+
     private static String devToken = "f3x0jTRfsChuD1KuAbPhKTEuMhpyEvbS";
     private static BoxAPIConnection api;
     private static File zoomFolder;
@@ -21,7 +23,9 @@ public class Main {
     private static Scanner scan;
 
     public static void main(String[] args) {
+
         /*
+
         Program Logic:
 
         Check if user has a user.json file
@@ -49,24 +53,31 @@ public class Main {
             Keep asking user for valid input
 
          */
+
         scan = new Scanner(System.in);
         if (!new File("user.json").exists()) {
+
             boolean correctInfo = false;
             while (!correctInfo) {
+
                 name = askForLetters("Please enter your first name and last initial (ex: Ian C)");
                 job = askForLetters("Please enter your job (ex: STC Tutoring)");
                 lastUsed = askForDate("Please enter the date of the first file you want to upload (ex: 11/16/20)");
+
                 zoomFolder = new File(askForDirectory("Please enter the file directory for your zoom folder: \n(ex: C:\\Users\\ichen\\Documents\\Zoom)"));
                 System.out.printf("So, your name is %s, your job is %s, you want to upload \nfiles starting at %s and your zoom directory is %s\n", name, job, lastUsed, zoomFolder.toString());
                 System.out.println("Is that correct?");
+
                 String input = scan.next();
                 if (input.equals("yes") || input.equals("Yes") || input.equals("YES")) {
                     correctInfo = true;
                 }
                 scan.nextLine();
+
             }
             initializeJson();
         } else {
+
             try {
                 Scanner readJson = new Scanner(new File("user.json"));
                 StringBuilder stringJson = new StringBuilder();
@@ -74,13 +85,12 @@ public class Main {
                     stringJson.append(readJson.nextLine());
                 }
                 JsonObject json = JsonObject.readFrom(stringJson.toString());
-                // #TODO figure out why json strings have quotes, and find a better way of replacing quotes
-                name = json.get("name").toString().replace("\"", "");
-                job = json.get("job").toString().replace("\"", "");
-                lastUsed = json.get("lastUsed").toString().replace("\"", "");
-                zoomFolder = new File(json.get("directory").toString().replace("\"", ""));
-                System.out.printf("Name: %s Job: %s Last Used: %s Folder: %s", name, job, lastUsed, zoomFolder.toString());
 
+                name = processJSON(json.get("name"));
+                job = processJSON(json.get("job"));
+                lastUsed = processJSON(json.get("lastUsed"));
+                zoomFolder = new File(processJSON(json.get("directory")));
+                System.out.printf("Name: %s Job: %s Last Used: %s Folder: %s", name, job, lastUsed, zoomFolder.toString());
             } catch (FileNotFoundException e) {
                 System.out.println("Could not find user.json");
             }
@@ -88,12 +98,11 @@ public class Main {
         api = new BoxAPIConnection(devToken);
         videoFiles = new ArrayList<File>();
         Date d = new Date(lastUsed);
-        /*
+
         gatherFiles();
         for(File f : videoFiles) {
             uploadFile(f);
         }
-        */
     }
 
     public static String askForLetters(String prompt) {
@@ -133,6 +142,10 @@ public class Main {
         return str;
     }
 
+    public static String processJSON(JsonValue quoted) {
+        return quoted.toString().replace("\"","");
+    }
+
     public static void initializeJson() {
         JsonObject json = new JsonObject();
         json.add("name", name);
@@ -161,7 +174,7 @@ public class Main {
                 date = d.getDotFormat(); // format the date
                 for (File child : parent.listFiles()) { // for each file in folder
                     // if file is .mp4 and greater than 50MB
-                    if (child.getName().substring(child.getName().length() - 4).equals(".mp4") && child.length() / 1000000 > 50) {
+                    if (isValidMP4(child)) {
                         // rename the child to Name - Date - Job and add it to the list
                         child.renameTo(new File(child.getParent() + "\\" + name + " - " + date + " - " + job + ".mp4"));
                         videoFiles.add(child);
@@ -171,10 +184,13 @@ public class Main {
         }
     }
 
+    public static boolean isValidMP4(File f) {
+        return f.getName().substring(f.getName().length() - 4).equals(".mp4") && f.length() / 1000000 > 50;
+    }
+
     public static boolean uploadFile(File upload) {
         try {
             FileInputStream stream = new FileInputStream(upload);
-
             BoxFolder rootFolder = new BoxFolder(api, "126166257005");
             BoxFile.Info fileInfo = rootFolder.uploadLargeFile(stream, upload.getName(), upload.length());
             return true;
@@ -187,7 +203,7 @@ public class Main {
         }
     }
 
-    public static void resetFileNames(String type, String newName) { // utility function used to reset names of all files in zoomFolder
+    public static void resetFileNames(String type, String newName) { // utility function used for testing
         File zoomFolder = new File("C:\\Users\\ichen\\Documents\\Zoom");
         for (File parent : zoomFolder.listFiles()) {
             for (File child : parent.listFiles()) {
